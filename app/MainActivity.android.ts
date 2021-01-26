@@ -20,6 +20,29 @@ androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
         this._callbacks.onCreate(this, savedInstanceState, this.getIntent(), superProto.onCreate);
 
         // Add custom initialization logic here
+        application.on('NAVIGATE', (args) => {
+            const focusedElm = args.element
+
+            if (this.highlightedElement) {
+                this.highlightedElement.setBackgroundColor(android.graphics.Color.parseColor("#00E9E9E9"))
+                this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFAAAAAA"))
+                if (focusedElm.getId() === -1) {
+                    this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFE4E4E4"))
+                }
+            }
+
+            if (focusedElm.getId() !== -1) {
+                focusedElm.setBackgroundColor(android.graphics.Color.parseColor("#FFE9E9E9"))
+                focusedElm.setTextColor && focusedElm.setTextColor(android.graphics.Color.parseColor("#FF181818"))
+                this.highlightedElement = focusedElm;
+            }
+
+            application.notify({
+                eventName: 'NAVIGATED',
+                id: focusedElm.getId(),
+                element: focusedElm
+            })
+        });
     },
     onSaveInstanceState: function (outState) {
         this._callbacks.onSaveInstanceState(this, outState, superProto.onSaveInstanceState);
@@ -43,10 +66,10 @@ androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
         this._callbacks.onActivityResult(this, requestCode, resultCode, data, superProto.onActivityResult);
     },
     dispatchKeyEvent: function (event): boolean {
-        const focusedElm = this.getCurrentFocus()
+        let focusedElm = this.getCurrentFocus()
+        let shouldNavigate = true
 
         if (focusedElm && focusedElm !== this.highlightedElement) {
-
             if (this.highlightedElement) {
                 this.highlightedElement.setBackgroundColor(android.graphics.Color.parseColor("#00E9E9E9"))
                 this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFAAAAAA"))
@@ -55,17 +78,25 @@ androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
                 }
             }
 
-            if (focusedElm.getId() !== -1) {
+            if (focusedElm.getId() <= 13 && focusedElm.getId() !== -1) {
+                if (event.getKeyCode() === android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
+                    this.highlightedElement.requestFocus()
+                    focusedElm = this.highlightedElement
+                    shouldNavigate = false
+                }
+
                 focusedElm.setBackgroundColor(android.graphics.Color.parseColor("#FFE9E9E9"))
                 focusedElm.setTextColor && focusedElm.setTextColor(android.graphics.Color.parseColor("#FF181818"))
                 this.highlightedElement = focusedElm;
             }
 
-            application.notify({
-                eventName: 'NAVIGATED',
-                id: focusedElm.getId(),
-                element: focusedElm
-            })
+            if (shouldNavigate) {
+                application.notify({
+                    eventName: 'NAVIGATED',
+                    id: focusedElm.getId(),
+                    element: focusedElm
+                })
+            }
         }
         return superProto.dispatchKeyEvent.call(this, event);
     }

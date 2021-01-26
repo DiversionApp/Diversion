@@ -32,3 +32,4 @@ typings/
 
 *.tgz
 # webpack.config.js
+secrets.js

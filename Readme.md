@@ -1,20 +1,19 @@
-This is a blank svelte-native project template. It has preprocessing with typescript support enabled. It provides an easy way to get started with a svelte native project.
+# Diversion
+A Movie & TV Show Tracking App powered by trakt.tv
 
-# Usage
+# Setup
 
-You can get started with this using `degit`:
+You can get started with:
 
 ```bash
-npx degit halfnelson/svelte-native-template myapp
-cd myapp
 npm install
 ```
 
-Your svelte-native app will be found in the `myapp` folder.
+Rename `app/secrets.js.dist` to `app/secrets.js` and add the relevant API keys.
 
-Once installed use the `ns preview`, `ns build` or `ns run` commands as for a normal NativeScript application.
+Use the `ns preview`, `ns build` or `ns run` commands as for a normal NativeScript application.
 
-Example: install & run application on your device:
+Example: install & run application on your device (usb debugging on or emulator running):
 
 ```bash
 ns run android
