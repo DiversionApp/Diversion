@@ -1,6 +1,6 @@
 <page actionBarHidden="{true}">
     <gridLayout columns="*, 3.8*, 3.8*, 3.8*, 0.5*" rows="*, 1.2*, *, 1.2*, 1.2*, 1.2*, 1.2*, 1.2*, 1.2*, 1.2*, 1.2*, 1.2*, *, 1.2*, *" backgroundColor="#242424">
-        <image on:loaded="{onLoaded}" on:tap="{onClick}" col="0" row="1" src="~/images/trakt-icon-red.png" stretch="aspectFit"/>
+        <image on:loaded="{onLoaded}" on:tap="{onClick}" col="0" row="1" src="~/images/trakt-icon-red.png" stretch="aspectFit" class="starting-point"/>
         <label col="0" row="2" text="Sign in" class="sign-in"/>
         <button on:loaded="{onLoaded}" on:touch="{onClick}" col="0" row="3" text="&#xf002;" class="fas icons"/>
         <button on:loaded="{onLoaded}" on:touch="{onClick}" col="0" row="4" text="&#xf015;" class="fas icons"/>
@@ -41,6 +41,15 @@
         !args.object.android.isFocusableInTouchMode() && args.object.android.setFocusableInTouchMode(true)
         const rowAsId = args.object.android.getLayoutParams().row
         args.object.android.setId(rowAsId)
+        args.object.android.setContentDescription(`nav|${rowAsId}`)
+        if (rowAsId === 1) {
+            args.object.android.requestFocus()
+            application.notify({
+                eventName: 'NAVIGATE',
+                id: 1,
+                element: args.object.android
+            })
+        }
     }
 
     function onClick(args) {

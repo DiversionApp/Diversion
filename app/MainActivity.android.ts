@@ -1,14 +1,12 @@
 import * as application from "@nativescript/core/application";
 import * as frame from "@nativescript/core/ui/frame";
-import {Color} from "@nativescript/core/color"
-import colors from "@nativescript/core/color/known-colors"
 
 declare const android: any;
 declare const androidx: any;
 declare const console: any;
 
 const superProto = androidx.appcompat.app.AppCompatActivity.prototype;
-androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
+androidx.appcompat.app.AppCompatActivity.extend("org.Diversion.MainActivity", {
     onCreate: function (savedInstanceState) {
         // Set the isNativeScriptActivity in onCreate (as done in the original NativeScript activity code)
         // The JS constructor might not be called because the activity is created from Android.
@@ -23,25 +21,29 @@ androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
         application.on('NAVIGATE', (args) => {
             const focusedElm = args.element
 
-            if (this.highlightedElement) {
-                this.highlightedElement.setBackgroundColor(android.graphics.Color.parseColor("#00E9E9E9"))
-                this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFAAAAAA"))
-                if (focusedElm.getId() === -1) {
-                    this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFE4E4E4"))
-                }
+            if (this.lastHighlightedElement) {
+                setHighlight(this.lastHighlightedElement, false)
             }
 
-            if (focusedElm.getId() !== -1) {
-                focusedElm.setBackgroundColor(android.graphics.Color.parseColor("#FFE9E9E9"))
-                focusedElm.setTextColor && focusedElm.setTextColor(android.graphics.Color.parseColor("#FF181818"))
-                this.highlightedElement = focusedElm;
+            if (focusedElm.getContentDescription().startsWith('nav')) {
+                if (this.currentNav) {
+                    setHighlight(this.currentNav, false)
+                }
+                setHighlight(focusedElm, true)
+                this.currentNav = focusedElm
             }
+
+            this.lastHighlightedElement = focusedElm
 
             application.notify({
                 eventName: 'NAVIGATED',
                 id: focusedElm.getId(),
                 element: focusedElm
             })
+        });
+
+        application.on('CLEAR_HIGHLIGHTED_NAV', (args) => {
+            setHighlight(this.currentNav, false)
         });
     },
     onSaveInstanceState: function (outState) {
@@ -69,35 +71,50 @@ androidx.appcompat.app.AppCompatActivity.extend("org.myApp.MainActivity", {
         let focusedElm = this.getCurrentFocus()
         let shouldNavigate = true
 
-        if (focusedElm && focusedElm !== this.highlightedElement) {
-            if (this.highlightedElement) {
-                this.highlightedElement.setBackgroundColor(android.graphics.Color.parseColor("#00E9E9E9"))
-                this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFAAAAAA"))
-                if (focusedElm.getId() === -1) {
-                    this.highlightedElement.setTextColor && this.highlightedElement.setTextColor(android.graphics.Color.parseColor("#FFE4E4E4"))
-                }
+        if (focusedElm && focusedElm !== this.lastHighlightedElement) {
+            if (this.lastHighlightedElement) {
+                setHighlight(this.lastHighlightedElement, false)
             }
-
-            if (focusedElm.getId() <= 13 && focusedElm.getId() !== -1) {
-                if (event.getKeyCode() === android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
-                    this.highlightedElement.requestFocus()
-                    focusedElm = this.highlightedElement
+            if (focusedElm.getContentDescription().startsWith('nav')) {
+                if (this.currentNav && this.lastHighlightedElement && this.lastHighlightedElement.getContentDescription().startsWith('poster')) {
+                    this.currentNav.requestFocus()
+                    focusedElm = this.currentNav
                     shouldNavigate = false
                 }
-
-                focusedElm.setBackgroundColor(android.graphics.Color.parseColor("#FFE9E9E9"))
-                focusedElm.setTextColor && focusedElm.setTextColor(android.graphics.Color.parseColor("#FF181818"))
-                this.highlightedElement = focusedElm;
+                if (shouldNavigate) {
+                    application.notify({
+                        eventName: 'NAVIGATED',
+                        id: focusedElm.getId(),
+                        element: focusedElm
+                    })
+                }
+                this.currentNav = focusedElm
             }
-
-            if (shouldNavigate) {
-                application.notify({
-                    eventName: 'NAVIGATED',
-                    id: focusedElm.getId(),
-                    element: focusedElm
-                })
-            }
+            setHighlight(focusedElm, true)
+            console.log(this.lastHighlightedElement && this.lastHighlightedElement.getId(), '->', focusedElm.getId())
+            this.lastHighlightedElement = focusedElm
         }
+
         return superProto.dispatchKeyEvent.call(this, event);
     }
 });
+
+function setHighlight(element, isHighlighted) {
+    // nav buttons
+    if (element.getContentDescription().startsWith('nav')) {
+        if (!isHighlighted) {
+            element.setBackgroundColor(android.graphics.Color.parseColor("#00E9E9E9"))
+            element.setTextColor && element.setTextColor(android.graphics.Color.parseColor("#FFAAAAAA"))
+        } else {
+            element.setBackgroundColor(android.graphics.Color.parseColor("#FFE9E9E9"))
+            element.setTextColor && element.setTextColor(android.graphics.Color.parseColor("#FF181818"))
+        }
+    } else if (element.getContentDescription().startsWith('poster')) {
+        application.notify({
+            eventName: 'POSTER_HIGHLIGHT',
+            id: element.getId(),
+            element,
+            isHighlighted
+        })
+    }
+}
